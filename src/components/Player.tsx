@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Text, makeStyles, tokens, Slider } from '@fluentui/react-components';
 import {
   PlayRegular,
@@ -146,24 +146,24 @@ export default function PlayerBar({
   const [playerState, setPlayerState] = useState<PlayerState | null>(null);
   const [isSeeking, setIsSeeking] = useState(false);
   const [seekValue, setSeekValue] = useState(0);
+  const seekValueRef = React.useRef(0);
   const [volume, setVolumeState] = useState(1);
   const [muted, setMuted] = useState(false);
   const [prevVolume, setPrevVolume] = useState(1);
 
   useEffect(() => {
-    const interval = setInterval(async () => {
-      try {
-        const state = await getPlayerState();
-        setPlayerState(state);
-        if (!isSeeking) {
-          setSeekValue(state.position_secs);
-        }
-      } catch {
-        // ignore
-      }
-    }, 500);
-    return () => clearInterval(interval);
-  }, [isSeeking]);
+  const interval = setInterval(async () => {
+    if (isSeeking) return;
+    try {
+      const state = await getPlayerState();
+      setPlayerState(state);
+      setSeekValue(state.position_secs);
+    } catch {
+      // ignore
+    }
+  }, 500);
+  return () => clearInterval(interval);
+}, [isSeeking]);
 
   const handlePlayPause = useCallback(async () => {
     if (!playerState) return;
@@ -179,15 +179,16 @@ export default function PlayerBar({
   }, [playerState, currentTrack]);
 
   const handleSeekChange = (value: number) => {
-    setIsSeeking(true);
-    setSeekValue(value);
-  };
+  setIsSeeking(true);
+  setSeekValue(value);
+  seekValueRef.current = value;
+};
 
-  const handleSeekCommit = async (value: number) => {
-    await seekTo(value);
-    setIsSeeking(false);
-  };
-
+const handleSeekCommit = async () => {
+  const value = seekValueRef.current;
+  await seekTo(value);
+  setIsSeeking(false);
+};
   const handleVolumeChange = async (value: number) => {
     setVolumeState(value);
     setMuted(value === 0);
@@ -288,33 +289,31 @@ export default function PlayerBar({
         <div className={styles.seekRow}>
           <Text size={100} className={styles.timeText}>{formatTime(seekValue)}</Text>
           <Slider
-            style={{ flex: 1 }}
-            min={0}
-            max={duration || 1}
-            value={seekValue}
-            step={0.1}
-            onChange={(_, data) => handleSeekChange(data.value)}
-            onPointerUp={() => handleSeekCommit(seekValue)}
-          />
+           style={{ flex: 1 }}
+           min={0}
+           max={duration || 1}
+           value={seekValue}
+           step={0.1}
+           onChange={(_, data) => handleSeekChange(data.value)}
+           onPointerUp={handleSeekCommit}
+           />
           <Text size={100} className={styles.timeText}>-{formatTime(remaining)}</Text>
         </div>
       </div>
 
       <div className={styles.right}>
-        <div className={styles.volumeRow}>
-          <button className={styles.controlBtn} onClick={handleMuteToggle}>
-            {muted || volume === 0 ? <SpeakerMuteRegular /> : <Speaker2Regular />}
-          </button>
-          <Slider
-            style={{ flex: 1 }}
-            min={0}
-            max={1}
-            step={0.01}
-            value={muted ? 0 : volume}
-            onChange={(_, data) => handleVolumeChange(data.value)}
-          />
-        </div>
+       <button className={styles.controlBtn} onClick={handleMuteToggle}>
+        {muted || volume === 0 ? <SpeakerMuteRegular /> : <Speaker2Regular />}
+       </button>
+       <Slider
+         style={{ width: '80px', minWidth: '80px', maxWidth: '80px', flexShrink: 0 }}
+         min={0}
+         max={1}
+         step={0.01}
+         value={muted ? 0 : volume}
+         onChange={(_, data) => handleVolumeChange(data.value)}
+        />
+       </div>
       </div>
-    </div>
   );
 }

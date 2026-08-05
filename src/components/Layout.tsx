@@ -112,7 +112,7 @@ export default function Layout() {
       </div>
       <div className={styles.main}>
         <div className={styles.content}>
-          <Outlet context={{ setCurrentTrack, setQueue, setQueueIndex, currentTrack }} />
+          <Outlet context={{ setCurrentTrack, setQueue, setQueueIndex, currentTrack, queue, queueIndex }} />
         </div>
         <PlayerBar
           currentTrack={currentTrack}

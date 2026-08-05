@@ -104,13 +104,14 @@ impl AudioEngine {
     }
 
     pub fn seek(&self, position_secs: f64) {
-        if let Ok(guard) = self.sink.lock() {
-            if let Some(sink) = guard.as_ref() {
-                *sink.seek_request.lock().unwrap() = Some(position_secs);
-                sink.audio_buf.lock().unwrap().clear();
-            }
+    if let Ok(guard) = self.sink.lock() {
+        if let Some(sink) = guard.as_ref() {
+            *sink.seek_request.lock().unwrap() = Some(position_secs);
+            sink.audio_buf.lock().unwrap().clear();
+            *sink.position_secs.lock().unwrap() = position_secs;
         }
     }
+}
 }
 
 fn play_file(path: &str, sink_handle: Arc<Mutex<Option<AudioSink>>>) -> Result<(), String> {
