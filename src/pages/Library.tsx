@@ -120,6 +120,7 @@ export default function Library() {
       path: t.path,
       title: t.title,
       artist: t.artist,
+      duration: t.duration_secs,
     }));
     setQueue(q);
     setQueueIndex(index);

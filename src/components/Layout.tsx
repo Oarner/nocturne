@@ -3,6 +3,7 @@ import { makeStyles, tokens } from '@fluentui/react-components';
 import { MusicNote2Regular, ListRegular, SettingsRegular } from '@fluentui/react-icons';
 import { useNavigate, useLocation, Outlet } from 'react-router-dom';
 import PlayerBar from './Player';
+import { playTrack, getPlayerState, seekTo } from '../lib/api';
 
 const useStyles = makeStyles({
   root: {
@@ -76,19 +77,28 @@ export default function Layout() {
   const [shuffle, setShuffle] = useState(false);
   const [repeatMode, setRepeatMode] = useState<RepeatMode>('off');
 
-  const handleNext = () => {
-    if (queue.length === 0) return;
-    const nextIndex = (queueIndex + 1) % queue.length;
-    setQueueIndex(nextIndex);
-    setCurrentTrack(queue[nextIndex]);
-  };
+  const handleNext = async () => {
+  if (queue.length === 0) return;
+  const nextIndex = (queueIndex + 1) % queue.length;
+  setQueueIndex(nextIndex);
+  setCurrentTrack(queue[nextIndex]);
+  await playTrack(queue[nextIndex].path);
+};
 
-  const handlePrevious = () => {
-    if (queue.length === 0) return;
+const handlePrevious = async () => {
+  if (queue.length === 0) return;
+  const state = await getPlayerState();
+  if (state.position_secs > 2) {
+    // More than 2 seconds in — restart current track
+    await seekTo(0);
+  } else {
+    // Within 2 seconds — go to previous track
     const prevIndex = (queueIndex - 1 + queue.length) % queue.length;
     setQueueIndex(prevIndex);
     setCurrentTrack(queue[prevIndex]);
-  };
+    await playTrack(queue[prevIndex].path);
+  }
+};  
 
   const handleRepeatToggle = () => {
     setRepeatMode(prev =>
